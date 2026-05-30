@@ -70,12 +70,12 @@ function AppContent() {
       <Sidebar />
 
       {/* Main Workspace Frame */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
+      <div className="flex-1 flex flex-col h-full overflow-hidden relative">
         {/* Global Toolbar Header */}
-        <header className="h-16 border-b border-zinc-900 px-8 flex items-center justify-between shrink-0 bg-[#030303]/40 backdrop-blur">
+        <header className="h-16 border-b border-zinc-900 px-8 flex items-center justify-between shrink-0 bg-[#020204]/40 backdrop-blur-xl z-20">
           <div className="flex items-center gap-3">
-            <span className="text-xs font-bold text-zinc-500 font-mono tracking-wider uppercase">
-              WORKSPACE: DEFAULT_POOL
+            <span className="text-[10px] font-black text-zinc-400 font-mono tracking-widest uppercase bg-zinc-950/60 border border-zinc-900 px-2.5 py-1 rounded-md">
+              WORKSPACE &bull; DEFAULT_POOL
             </span>
           </div>
 
@@ -86,43 +86,53 @@ function AppContent() {
                 const event = new KeyboardEvent('keydown', { key: 'k', ctrlKey: true });
                 window.dispatchEvent(event);
               }}
-              className="glass-panel border border-zinc-900 px-3.5 py-1.5 rounded-lg text-[11px] font-mono text-zinc-400 hover:text-zinc-200 transition-all flex items-center gap-2 cursor-pointer hover:border-zinc-800/80"
+              className="glass-panel border border-zinc-900/60 px-3.5 py-1.5 rounded-lg text-[10px] font-bold font-mono text-zinc-400 hover:text-zinc-100 transition-all flex items-center gap-3 cursor-pointer hover:border-zinc-800 hover:shadow-lg shadow-black/40"
             >
+              <Search className="w-3.5 h-3.5 text-zinc-500" />
               <span>Search commands...</span>
-              <kbd className="bg-zinc-950 border border-zinc-900 px-1 py-0.2 rounded font-bold font-mono text-[9px] text-zinc-500">
+              <kbd className="bg-zinc-950 border border-zinc-850 px-1.5 py-0.2 rounded font-black font-mono text-[9px] text-sky-400">
                 Ctrl+K
               </kbd>
             </button>
             
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" title="System operational" />
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" title="System fully operational"></span>
+            </span>
           </div>
         </header>
 
         {/* Dynamic Route Content Shell */}
-        <main className="flex-1 flex overflow-hidden">
+        <main className="flex-1 flex overflow-hidden relative z-10">
           {/* Main scroll container */}
-          <div className="flex-1 overflow-y-auto px-8 py-6">
-            {activePage === '/dashboard' && (
-              <div className="space-y-6">
+          <div className="flex-1 overflow-y-auto px-8 py-6 scrollbar-thin">
+            {activePage.startsWith('/dashboard') && (
+              <div className="space-y-6 animate-fade-in">
                 {/* Hero Workspace Header */}
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b border-zinc-900/60">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b border-zinc-900/50">
                   <div>
-                    <h2 className="text-lg font-black text-zinc-100 tracking-tight font-sans">
-                      Developer Command Dashboard
+                    <h2 className="text-xl font-black tracking-tight font-sans gradient-heading">
+                      {activePage === '/dashboard' 
+                        ? 'Developer Command Dashboard' 
+                        : `${plugins.find(p => `/dashboard/${p.id}` === activePage)?.name || 'Service'} Workspace`}
                     </h2>
-                    <p className="text-xs text-zinc-500 font-sans mt-1">
-                      Monitor server fleets, container states, S3 bucket storage sizes, and git logs.
+                    <p className="text-xs text-zinc-550 font-sans font-medium mt-1">
+                      {activePage === '/dashboard' 
+                        ? 'Monitor server fleets, container states, S3 bucket storage sizes, and git logs.' 
+                        : `Dedicated control panel and active integration widgets for your connected ${plugins.find(p => `/dashboard/${p.id}` === activePage)?.name || 'service'}.`}
                     </p>
                   </div>
                   
-                  <div className="flex items-center gap-2 text-[10px] text-zinc-500 font-mono bg-zinc-950 border border-zinc-900 rounded-lg px-3.5 py-2">
-                    <Sparkles className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
-                    <span>Tagline: "Your Developer Stack. One Hub."</span>
+                  <div className="flex items-center gap-2 text-[10px] text-sky-400 font-bold font-mono bg-sky-950/20 border border-sky-900/20 rounded-lg px-3.5 py-2">
+                    <Sparkles className="w-3.5 h-3.5 text-sky-400 animate-pulse shrink-0" />
+                    <span className="tracking-wide">
+                      {activePage === '/dashboard' ? 'Your Developer Stack. One Hub.' : 'Real-time Live Integration'}
+                    </span>
                   </div>
                 </div>
 
                 {/* Dashboard grid panel containing dynamically toggleable widget components */}
-                <DashboardGrid />
+                <DashboardGrid pluginId={activePage === '/dashboard' ? undefined : activePage.replace('/dashboard/', '')} />
               </div>
             )}
 

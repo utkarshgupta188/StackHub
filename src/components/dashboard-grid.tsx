@@ -31,20 +31,26 @@ const SIZE_MAP = {
   full: 'col-span-1 lg:col-span-3 row-span-2',
 };
 
-export default function DashboardGrid() {
+export default function DashboardGrid({ pluginId }: { pluginId?: string }) {
   const { enabledWidgets, setActivePage } = usePlugins();
 
-  if (enabledWidgets.length === 0) {
+  const displayedWidgets = pluginId
+    ? enabledWidgets.filter(w => w.pluginId === pluginId)
+    : enabledWidgets;
+
+  if (displayedWidgets.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 px-6 glass-panel rounded-xl border border-zinc-900/60 max-w-2xl mx-auto text-center mt-12 animate-fade-in">
-        <Puzzle className="w-12 h-12 text-zinc-600 mb-4 animate-bounce" />
-        <h3 className="text-base font-bold text-zinc-200 font-sans">No workspace plugins enabled</h3>
+        <Puzzle className="w-12 h-12 text-zinc-650 mb-4 animate-bounce" />
+        <h3 className="text-base font-bold text-zinc-200 font-sans">No active widgets</h3>
         <p className="text-xs text-zinc-500 max-w-sm mt-2 font-sans leading-relaxed">
-          StackHub is an extensible developer operating system. Connect GitHub repositories, monitor S3 bucket bills, start/stop EC2 servers, or stream Docker logs by enabling extensions.
+          {pluginId
+            ? `Please enable the ${pluginId} extension or verify its API token settings to view its dashboard widgets.`
+            : 'StackHub is an extensible developer operating system. Connect GitHub repositories, monitor S3 bucket bills, start/stop EC2 servers, or stream Docker logs by enabling extensions.'}
         </p>
         <button
           onClick={() => setActivePage('/plugins')}
-          className="mt-6 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 text-xs font-semibold px-4.5 py-2.5 rounded-lg transition-all duration-100 flex items-center gap-2 cursor-pointer shadow-lg shadow-white/5"
+          className="mt-6 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 text-xs font-semibold px-4.5 py-2.5 rounded-lg transition-all duration-100 flex items-center gap-2 cursor-pointer shadow-lg shadow-white/5 font-sans"
         >
           Manage plugins and integrations <ArrowRight className="w-3.5 h-3.5" />
         </button>
@@ -54,7 +60,7 @@ export default function DashboardGrid() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 animate-fade-in auto-rows-[minmax(180px,auto)]">
-      {enabledWidgets.map(widget => {
+      {displayedWidgets.map(widget => {
         const Component = WIDGET_MAP[widget.component];
         if (!Component) return null;
 
