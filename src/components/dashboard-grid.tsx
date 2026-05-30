@@ -6,6 +6,8 @@ import { usePlugins } from '@/context/plugin-context';
 import { GithubPullRequests, GithubRepositories, GithubCommits } from './widgets/github-widgets';
 import { AwsCosts, AwsInstances, AwsBuckets } from './widgets/aws-widgets';
 import { DockerContainers, DockerImages } from './widgets/docker-widgets';
+import { CloudflareDns, CloudflareSecurity } from './widgets/cloudflare-widgets';
+import { VercelDeployments, VercelDomains } from './widgets/vercel-widgets';
 
 const WIDGET_MAP: Record<string, React.ComponentType<any>> = {
   GithubPullRequests,
@@ -16,6 +18,10 @@ const WIDGET_MAP: Record<string, React.ComponentType<any>> = {
   AwsBuckets,
   DockerContainers,
   DockerImages,
+  CloudflareDns,
+  CloudflareSecurity,
+  VercelDeployments,
+  VercelDomains,
 };
 
 const SIZE_MAP = {

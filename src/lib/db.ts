@@ -22,38 +22,9 @@ const INITIAL_DB: DatabaseSchema = {
     avatar: 'https://api.dicebear.com/7.x/bottts/svg?seed=dev',
   },
   plugins: ALL_DEFAULT_PLUGINS,
-  feed: [
-    { id: 'f-1', pluginId: 'github', title: 'New PR opened: feat: docker console logs', description: 'pr #114 created in repo stackhub-core', timestamp: '5m ago', type: 'info' },
-    { id: 'f-2', pluginId: 'aws', title: 'EC2 production-web-server-01 CPU alert', description: 'CPU utilization reached 89.2% on inst i-03fa2cd91e843a', timestamp: '12m ago', type: 'warning' },
-    { id: 'f-3', pluginId: 'docker', title: 'Container stackhub-postgresql-db booted', description: 'Port 5432 successfully bound', timestamp: '20m ago', type: 'success' },
-  ],
-  awsInstances: [
-    { id: 'i-03fa2cd91e843a', name: 'production-web-server-01', type: 't3.medium', status: 'running', ip: '54.210.12.89', region: 'us-east-1' },
-    { id: 'i-08cb92fa942c11', name: 'staging-api-server-01', type: 't3.small', status: 'running', ip: '34.200.45.101', region: 'us-east-1' },
-    { id: 'i-09ef912ad21c9b', name: 'analytics-worker-spot', type: 'c6g.large', status: 'stopped', ip: '-', region: 'us-west-2' },
-    { id: 'i-0aa4f8b91a27e0', name: 'test-sandbox-env', type: 't2.nano', status: 'stopped', ip: '-', region: 'us-west-2' },
-  ],
-  dockerContainers: [
-    { id: 'c-8af21d9b', name: 'stackhub-postgresql-db', image: 'postgres:16-alpine', status: 'running', ports: '5432:5432', cpu: '1.2%', memory: '42 MB', logs: [
-      '2026-05-30 19:10:02 UTC [1] LOG:  starting PostgreSQL 16.2 on x86_64-pc-linux-musl, compiled by gcc',
-      '2026-05-30 19:10:02 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432',
-      '2026-05-30 19:10:02 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"',
-      '2026-05-30 19:10:03 UTC [22] LOG:  database system was shut down at 2026-05-30 19:08:44 UTC',
-      '2026-05-30 19:10:03 UTC [1] LOG:  database system is ready to accept connections',
-    ]},
-    { id: 'c-d9c28bf1', name: 'stackhub-redis-cache', image: 'redis:7.2-alpine', status: 'running', ports: '6379:6379', cpu: '0.4%', memory: '18 MB', logs: [
-      '1:C 30 May 2026 19:10:02.100 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo',
-      '1:C 30 May 2026 19:10:02.101 # Redis version=7.2.4, pid=1, just started',
-      '1:M 30 May 2026 19:10:02.103 * Running mode=standalone, port=6379.',
-      '1:M 30 May 2026 19:10:02.103 # Server initialized',
-    ]},
-    { id: 'c-f4b23d9b', name: 'stackhub-fastapi-backend', image: 'stackhub/backend:latest', status: 'running', ports: '8000:8000', cpu: '2.4%', memory: '112 MB', logs: [
-      'INFO:     Started server process [1]',
-      'INFO:     Waiting for application startup.',
-      'INFO:     Application startup complete.',
-      'INFO:     Uvicorn running on http://0.0.0.0:8000',
-    ]},
-  ]
+  feed: [], // Starts completely empty. Only real logs allowed!
+  awsInstances: [],
+  dockerContainers: []
 };
 
 export function readDb(): DatabaseSchema {
@@ -63,7 +34,53 @@ export function readDb(): DatabaseSchema {
   }
   try {
     const data = fs.readFileSync(DB_FILE, 'utf-8');
-    return JSON.parse(data);
+    const db = JSON.parse(data);
+    
+    // Clear out any stale mock feed logs if they survived from previous versions
+    if (db.feed && db.feed.some((f: any) => ['f-1', 'f-2', 'f-3'].includes(f.id))) {
+      db.feed = [];
+    }
+
+    // Force upgrade AWS plugin region choices in existing db records
+    const awsPlugin = db.plugins?.find((p: any) => p.id === 'aws');
+    if (awsPlugin && awsPlugin.settings?.defaultRegion) {
+      awsPlugin.settings.defaultRegion.choices = [
+        'us-east-1',
+        'us-east-2',
+        'us-west-1',
+        'us-west-2',
+        'ca-central-1',
+        'eu-west-1',
+        'eu-west-2',
+        'eu-west-3',
+        'eu-central-1',
+        'eu-north-1',
+        'eu-south-1',
+        'ap-east-1',
+        'ap-south-1',
+        'ap-northeast-1',
+        'ap-northeast-2',
+        'ap-northeast-3',
+        'ap-southeast-1',
+        'ap-southeast-2',
+        'ap-southeast-3',
+        'sa-east-1',
+        'me-south-1',
+        'af-south-1',
+      ];
+    }
+
+    // Force backfill newly added plugins (Cloudflare, Vercel)
+    if (db.plugins) {
+      ALL_DEFAULT_PLUGINS.forEach(defaultP => {
+        if (!db.plugins.some((p: any) => p.id === defaultP.id)) {
+          db.plugins.push(defaultP);
+        }
+      });
+    }
+    
+    fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
+    return db;
   } catch (e) {
     console.error('Failed to read db file, resetting', e);
     return INITIAL_DB;
