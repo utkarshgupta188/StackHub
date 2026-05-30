@@ -39,4 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local database persistence (contains real API keys)
 stackhub_db.json
+*.db
+*.sqlite
+*.sqlite3
