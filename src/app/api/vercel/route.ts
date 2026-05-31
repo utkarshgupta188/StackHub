@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { readDb } from '@/lib/db';
+import { readDb, resolveSecret } from '@/lib/db';
 
 type VercelProject = {
   id: string;
@@ -113,9 +113,9 @@ export async function GET(req: Request) {
 
     const db = readDb();
     const vercelPlugin = db.plugins.find(p => p.id === 'vercel');
-    const token = vercelPlugin?.settings.authToken.value;
+    const token = resolveSecret(vercelPlugin?.settings.authToken.value || '');
     const teamId = vercelPlugin?.settings.teamId?.value?.trim?.() || searchParams.get('teamId') || '';
-    const trackedProjects = vercelPlugin?.settings.projectId?.value?.trim?.() || searchParams.get('trackedProjects') || '';
+    const trackedProjects = resolveSecret(vercelPlugin?.settings.projectId?.value?.trim?.() || searchParams.get('trackedProjects') || '');
 
     if (!token || token.trim() === '') {
       return NextResponse.json({ error: 'Vercel Auth Token not configured.' }, { status: 400 });

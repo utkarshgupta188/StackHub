@@ -5,7 +5,7 @@ import { LambdaClient, ListFunctionsCommand, InvokeCommand } from '@aws-sdk/clie
 import { CloudWatchClient, GetMetricStatisticsCommand } from '@aws-sdk/client-cloudwatch';
 import { IAMClient, ListUsersCommand, GetAccountSummaryCommand } from '@aws-sdk/client-iam';
 import { CostExplorerClient, GetCostAndUsageCommand } from '@aws-sdk/client-cost-explorer';
-import { readDb, writeDb } from '@/lib/db';
+import { readDb, writeDb, resolveSecret } from '@/lib/db';
 
 const AWS_REGIONS = [
   'us-east-1','us-east-2','us-west-1','us-west-2','ca-central-1',
@@ -41,8 +41,8 @@ export async function GET(req: Request) {
 
     const db = readDb();
     const awsPlugin = db.plugins.find(p => p.id === 'aws');
-    const accessKey = awsPlugin?.settings.accessKeyId.value;
-    const secretKey = awsPlugin?.settings.secretAccessKey.value;
+    const accessKey = resolveSecret(awsPlugin?.settings.accessKeyId.value || '');
+    const secretKey = resolveSecret(awsPlugin?.settings.secretAccessKey.value || '');
     const defaultRegion = awsPlugin?.settings.defaultRegion.value || 'us-east-1';
 
     if (!accessKey || accessKey === 'AKIAIOSFODNN7EXAMPLE' || accessKey.trim() === '') {
@@ -310,8 +310,8 @@ export async function POST(req: Request) {
     const db = readDb();
 
     const awsPlugin = db.plugins.find(p => p.id === 'aws');
-    const accessKey = awsPlugin?.settings.accessKeyId.value;
-    const secretKey = awsPlugin?.settings.secretAccessKey.value;
+    const accessKey = resolveSecret(awsPlugin?.settings.accessKeyId.value || '');
+    const secretKey = resolveSecret(awsPlugin?.settings.secretAccessKey.value || '');
     const targetRegion = region || awsPlugin?.settings.defaultRegion.value || 'us-east-1';
 
     if (!accessKey || accessKey === 'AKIAIOSFODNN7EXAMPLE' || !secretKey) {

@@ -94,3 +94,11 @@ export function writeDb(data: DatabaseSchema) {
     console.error('Failed to write db file', e);
   }
 }
+
+export function resolveSecret(value: string): string {
+  if (value && typeof value === 'string' && value.startsWith('env:')) {
+    const envKey = value.substring(4);
+    return process.env[envKey] || '';
+  }
+  return value;
+}

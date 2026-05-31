@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { readDb, writeDb } from '@/lib/db';
+import { readDb, writeDb, resolveSecret } from '@/lib/db';
 
 export async function GET(req: Request) {
   try {
@@ -9,8 +9,8 @@ export async function GET(req: Request) {
 
     const db = readDb();
     const sbPlugin = db.plugins.find(p => p.id === 'supabase');
-    const token = sbPlugin?.settings.accessToken.value;
-    const projectRef = sbPlugin?.settings.projectRef.value;
+    const token = resolveSecret(sbPlugin?.settings.accessToken.value || '');
+    const projectRef = resolveSecret(sbPlugin?.settings.projectRef.value || '');
 
     if (!token || token.trim() === '') {
       return NextResponse.json({ error: 'Supabase Access Token not configured.' }, { status: 400 });

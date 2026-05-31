@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { readDb, writeDb } from '@/lib/db';
+import { readDb, writeDb, resolveSecret } from '@/lib/db';
 
 function getHeaders(pat: string) {
   return {
@@ -18,7 +18,7 @@ export async function GET(req: Request) {
 
     const db = readDb();
     const githubPlugin = db.plugins.find(p => p.id === 'github');
-    const pat = githubPlugin?.settings.personalAccessToken.value;
+    const pat = resolveSecret(githubPlugin?.settings.personalAccessToken.value || '');
 
     if (!pat || pat === 'ghp_mocktoken1234567890abcdefghijklmnopqr' || pat.trim() === '') {
       return NextResponse.json({ error: 'GitHub Personal Access Token not configured.' }, { status: 400 });
@@ -250,7 +250,7 @@ export async function POST(req: Request) {
     const { action, repo, owner, id, title, body, branch, base } = await req.json();
     const db = readDb();
     const githubPlugin = db.plugins.find(p => p.id === 'github');
-    const pat = githubPlugin?.settings.personalAccessToken.value;
+    const pat = resolveSecret(githubPlugin?.settings.personalAccessToken.value || '');
 
     if (!pat || pat === 'ghp_mocktoken1234567890abcdefghijklmnopqr' || pat.trim() === '') {
       return NextResponse.json({ error: 'GitHub Personal Access Token not configured.' }, { status: 400 });

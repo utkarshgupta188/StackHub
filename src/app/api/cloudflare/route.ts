@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { readDb, writeDb } from '@/lib/db';
+import { readDb, writeDb, resolveSecret } from '@/lib/db';
 
 export async function GET(req: Request) {
   try {
@@ -9,7 +9,7 @@ export async function GET(req: Request) {
 
     const db = readDb();
     const cfPlugin = db.plugins.find(p => p.id === 'cloudflare');
-    const token = cfPlugin?.settings.apiToken.value;
+    const token = resolveSecret(cfPlugin?.settings.apiToken.value || '');
 
     if (!token || token.trim() === '') {
       return NextResponse.json({ error: 'Cloudflare API Token not configured.' }, { status: 400 });
@@ -238,9 +238,10 @@ export async function POST(req: Request) {
     const db = readDb();
     
     const cfPlugin = db.plugins.find(p => p.id === 'cloudflare');
-    const token = cfPlugin?.settings.apiToken.value;
+    const token = resolveSecret(cfPlugin?.settings.apiToken.value || '');
+    const resolvedZoneId = resolveSecret(zoneId || cfPlugin?.settings.zoneId?.value || '');
 
-    if (!token || !zoneId) {
+    if (!token || !resolvedZoneId) {
       return NextResponse.json({ error: 'Cloudflare credentials not configured.' }, { status: 400 });
     }
 
@@ -250,7 +251,7 @@ export async function POST(req: Request) {
     };
 
     if (action === 'toggleProxy') {
-      const res = await fetch(`https://api.cloudflare.com/client/v4/zones/${zoneId}/dns_records/${id}`, {
+      const res = await fetch(`https://api.cloudflare.com/client/v4/zones/${resolvedZoneId}/dns_records/${id}`, {
         method: 'PATCH',
         headers,
         body: JSON.stringify({ proxied }),
@@ -274,7 +275,7 @@ export async function POST(req: Request) {
     }
 
     if (action === 'updateSetting') {
-      const res = await fetch(`https://api.cloudflare.com/client/v4/zones/${zoneId}/settings/${settingId}`, {
+      const res = await fetch(`https://api.cloudflare.com/client/v4/zones/${resolvedZoneId}/settings/${settingId}`, {
         method: 'PATCH',
         headers,
         body: JSON.stringify({ value }),
