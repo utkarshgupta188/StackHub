@@ -4,6 +4,7 @@ import { awsPlugin } from './aws';
 import { dockerPlugin } from './docker';
 import { cloudflarePlugin } from './cloudflare';
 import { vercelPlugin } from './vercel';
+import { supabasePlugin } from './supabase';
 
 export const ALL_DEFAULT_PLUGINS: Plugin[] = [
   githubPlugin,
@@ -11,6 +12,7 @@ export const ALL_DEFAULT_PLUGINS: Plugin[] = [
   dockerPlugin,
   cloudflarePlugin,
   vercelPlugin,
+  supabasePlugin,
 ];
 
 export function getPluginById(id: string): Plugin | undefined {

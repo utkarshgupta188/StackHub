@@ -3,7 +3,7 @@ import { Plugin } from '@/types';
 export const vercelPlugin: Plugin = {
   id: 'vercel',
   name: 'Vercel Deployment',
-  description: 'Inspect active deployments, check domains resolution, and trigger instant project rollbacks.',
+  description: 'Track multiple Vercel projects, inspect deployments, and monitor domain health in one place.',
   icon: 'Triangle',
   enabled: false,
   settings: {
@@ -14,15 +14,22 @@ export const vercelPlugin: Plugin = {
       placeholder: 'Paste Vercel Token...',
     },
     projectId: {
-      label: 'Vercel Project ID',
+      label: 'Tracked Projects',
       type: 'text',
       value: '',
-      placeholder: 'e.g. prj_1a2b3c4d...',
+      placeholder: 'Comma-separated project IDs or names; leave blank for all projects...',
+    },
+    teamId: {
+      label: 'Vercel Team ID',
+      type: 'text',
+      value: '',
+      placeholder: 'Optional teamId for team resources...',
     },
   },
   widgets: [
-    { id: 'vercel-deployments', title: 'Vercel Deployments', size: 'md', component: 'VercelDeployments' },
-    { id: 'vercel-domains', title: 'Project Domain States', size: 'sm', component: 'VercelDomains' },
+    { id: 'vercel-projects', title: 'Project Portfolio', size: 'full', component: 'VercelProjects' },
+    { id: 'vercel-deployments', title: 'Recent Deployments', size: 'md', component: 'VercelDeployments' },
+    { id: 'vercel-domains', title: 'Domain Coverage', size: 'md', component: 'VercelDomains' },
   ],
   commands: [
     {

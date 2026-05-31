@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { LayoutDashboard, Puzzle, Settings, Terminal, Activity, LogOut, GitBranch, Cloud, Shield, Triangle } from 'lucide-react';
+import React, { useState } from 'react';
+import { LayoutDashboard, Puzzle, Settings, Terminal, LogOut, GitBranch, Cloud, Shield, Triangle, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
 import { usePlugins } from '@/context/plugin-context';
 import { useAuth } from '@/context/auth-context';
 
@@ -14,140 +14,182 @@ const PLUGIN_ICON_MAP: Record<string, React.ComponentType<any>> = {
 };
 
 export default function Sidebar() {
+  const [collapsed, setCollapsed] = useState(false);
   const { activePage, setActivePage, plugins } = usePlugins();
   const { user, signOut } = useAuth();
 
   const enabledCount = plugins.filter(p => p.enabled).length;
   const activePlugins = plugins.filter(p => p.enabled);
 
-  const navigation = [
-    { id: '/dashboard', name: 'Overview', icon: LayoutDashboard },
-    { id: '/plugins', name: 'Extensions', icon: Puzzle, count: enabledCount },
-    { id: '/settings', name: 'Profile Settings', icon: Settings },
-  ];
-
   return (
-    <aside className="w-64 border-r border-zinc-900/80 bg-[#050508]/85 backdrop-blur-xl flex flex-col justify-between h-full py-6 shrink-0 shadow-2xl relative">
-      {/* Brand Header */}
+    <aside className={`border-r border-sidebar-border bg-[#090a0f] flex flex-col justify-between h-full py-4 shrink-0 relative transition-all duration-300 ease-in-out z-30 ${collapsed ? 'w-16' : 'w-[260px]'}`}>
       <div>
-        <div className="px-6 flex items-center gap-3">
-          <div className="w-8.5 h-8.5 rounded-lg bg-zinc-100 flex items-center justify-center shadow-md shadow-white/5 shrink-0 relative group">
-            <div className="absolute inset-0 bg-sky-400 rounded-lg blur-md opacity-25 group-hover:opacity-40 transition-opacity" />
-            <Terminal className="w-4 h-4 text-zinc-950 stroke-[2.5] relative z-10" />
+        {/* Sidebar Header Logo */}
+        <div className={`h-16 flex items-center gap-3 px-4 border-b border-sidebar-border ${collapsed ? 'justify-center' : ''}`}>
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#10b981]">
+            <Terminal className="w-4 h-4 text-white stroke-[2.5]" />
           </div>
+          {!collapsed && (
+            <div className="flex flex-col">
+              <span className="text-sm font-bold tracking-tight text-foreground">StackHub</span>
+              <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground/40">Dashboard</span>
+            </div>
+          )}
+        </div>
+
+        {/* Navigation Categories */}
+        <nav role="navigation" className="flex-1 space-y-4 px-3 py-4">
+          
+          {/* Overview Section */}
           <div>
-            <h1 className="text-sm font-black tracking-tight text-zinc-100 font-sans tracking-wide">StackHub</h1>
-            <p className="text-[9px] text-zinc-500 font-mono font-bold mt-0.5 tracking-widest">DEV OS v1.0.0</p>
-          </div>
-        </div>
-
-        {/* Global Action Banner */}
-        <div className="mx-4 mt-6 p-3 rounded-lg border border-zinc-900/60 bg-zinc-950/60 backdrop-blur shadow-inner">
-          <p className="text-[10px] text-zinc-400 font-mono leading-relaxed">
-            Press <kbd className="bg-zinc-900 border border-zinc-800 px-1 py-0.2 rounded font-black font-mono text-[9px] text-sky-400 shadow-sm">Ctrl+K</kbd> to launch Command Palette.
-          </p>
-        </div>
-
-        {/* Primary Navigation */}
-        <nav className="mt-8 px-3.5 space-y-1.5">
-          {navigation.map(item => {
-            const Icon = item.icon;
-            const isActive = activePage === item.id;
-            return (
+            {!collapsed ? (
+              <button className="flex w-full items-center gap-2 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/40 transition-colors hover:text-muted-foreground/60">
+                <span className="flex-1 text-start">Overview</span>
+                <ChevronDown className="w-3 h-3 text-muted-foreground/40" />
+              </button>
+            ) : (
+              <div className="h-4" />
+            )}
+            
+            <div className="mt-1 space-y-0.5">
               <button
-                key={item.id}
-                onClick={() => setActivePage(item.id)}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-bold font-sans transition-all cursor-pointer relative group ${
-                  isActive
-                    ? 'bg-zinc-850/50 border border-zinc-800 text-zinc-100 shadow-inner'
-                    : 'text-zinc-550 hover:bg-zinc-900/40 hover:text-zinc-350 border border-transparent'
+                onClick={() => setActivePage('/dashboard')}
+                className={`w-full flex items-center ${collapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer relative group ${
+                  activePage === '/dashboard'
+                    ? 'bg-[#10b981]/15 text-[#10b981]'
+                    : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground'
                 }`}
               >
-                {isActive && (
-                  <span className="absolute left-0 top-2 bottom-2 w-0.75 bg-sky-400 rounded-r-md animate-pulse shadow-[0_0_8px_#38bdf8]" />
-                )}
-                <div className="flex items-center gap-2.5">
-                  <Icon className={`w-4 h-4 transition-colors ${isActive ? 'text-sky-400' : 'text-zinc-550 group-hover:text-zinc-350'}`} />
-                  <span className="tracking-wide">{item.name}</span>
-                </div>
-                {item.count !== undefined && (
-                  <span className={`text-[9px] font-bold font-mono px-2 py-0.5 rounded-full border ${
-                    isActive 
-                      ? 'bg-sky-950/20 border-sky-900/40 text-sky-400' 
-                      : 'bg-zinc-900 border-zinc-800 text-zinc-500'
-                  }`}>
-                    {item.count}
+                <LayoutDashboard className={`w-4.5 h-4.5 shrink-0 ${activePage === '/dashboard' ? 'text-[#10b981]' : 'text-muted-foreground/50 group-hover:text-foreground/80'}`} />
+                {!collapsed && <span className="flex-1 text-left">Dashboard</span>}
+              </button>
+
+              <button
+                onClick={() => setActivePage('/plugins')}
+                className={`w-full flex items-center ${collapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer relative group ${
+                  activePage === '/plugins'
+                    ? 'bg-[#10b981]/15 text-[#10b981]'
+                    : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground'
+                }`}
+              >
+                <Puzzle className={`w-4.5 h-4.5 shrink-0 ${activePage === '/plugins' ? 'text-[#10b981]' : 'text-muted-foreground/50 group-hover:text-foreground/80'}`} />
+                {!collapsed && <span className="flex-1 text-left">Extensions</span>}
+                {!collapsed && enabledCount > 0 && (
+                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#10b981]/15 px-1.5 text-[10px] font-semibold text-[#10b981]">
+                    {enabledCount}
                   </span>
                 )}
               </button>
-            );
-          })}
+            </div>
+          </div>
+
+          {/* Service Dashboards Section */}
+          {activePlugins.length > 0 && (
+            <div>
+              {!collapsed && (
+                <button className="flex w-full items-center gap-2 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/40 transition-colors hover:text-muted-foreground/60">
+                  <span className="flex-1 text-start">Services</span>
+                  <ChevronDown className="w-3 h-3 text-muted-foreground/40" />
+                </button>
+              )}
+              <div className="mt-1 space-y-0.5">
+                {activePlugins.map(p => {
+                  const Icon = PLUGIN_ICON_MAP[p.id] || Puzzle;
+                  const isPageActive = activePage === `/dashboard/${p.id}`;
+
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => setActivePage(`/dashboard/${p.id}`)}
+                      className={`w-full flex items-center ${collapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer relative group ${
+                        isPageActive
+                          ? 'bg-[#10b981]/15 text-[#10b981]'
+                          : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground'
+                      }`}
+                    >
+                      <Icon className={`w-4.5 h-4.5 shrink-0 ${isPageActive ? 'text-[#10b981]' : 'text-muted-foreground/50 group-hover:text-foreground/80'}`} />
+                      {!collapsed && <span className="flex-1 text-left truncate">{p.name}</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Settings Section */}
+          <div>
+            {!collapsed && (
+              <button className="flex w-full items-center gap-2 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/40 transition-colors hover:text-muted-foreground/60">
+                <span className="flex-1 text-start">System</span>
+                <ChevronDown className="w-3 h-3 text-muted-foreground/40" />
+              </button>
+            )}
+            <div className="mt-1 space-y-0.5">
+              <button
+                onClick={() => setActivePage('/settings')}
+                className={`w-full flex items-center ${collapsed ? 'justify-center px-0' : 'gap-3 px-3'} py-2 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer relative group ${
+                  activePage === '/settings'
+                    ? 'bg-[#10b981]/15 text-[#10b981]'
+                    : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground'
+                }`}
+              >
+                <Settings className={`w-4.5 h-4.5 shrink-0 ${activePage === '/settings' ? 'text-[#10b981]' : 'text-muted-foreground/50 group-hover:text-foreground/80'}`} />
+                {!collapsed && <span className="flex-1 text-left">Settings</span>}
+              </button>
+            </div>
+          </div>
+
         </nav>
-
-        {/* Workspace Active Dashboards */}
-        {activePlugins.length > 0 && (
-          <div className="mt-6 px-4">
-            <span className="text-[9px] font-black text-zinc-550 font-mono tracking-widest uppercase block mb-2 px-2.5">
-              Service Dashboards
-            </span>
-            <div className="space-y-1.5">
-              {activePlugins.map(p => {
-                const Icon = PLUGIN_ICON_MAP[p.id] || Puzzle;
-                const isActive = activePage === `/dashboard/${p.id}`;
-                return (
-                  <button
-                    key={p.id}
-                    onClick={() => setActivePage(`/dashboard/${p.id}`)}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-bold font-sans transition-all cursor-pointer relative group ${
-                      isActive
-                        ? 'bg-zinc-850/50 border border-zinc-800 text-zinc-100 shadow-inner'
-                        : 'text-zinc-550 hover:bg-zinc-900/40 hover:text-zinc-350 border border-transparent'
-                    }`}
-                  >
-                    {isActive && (
-                      <span className="absolute left-0 top-1.5 bottom-1.5 w-0.75 bg-sky-400 rounded-r-md animate-pulse shadow-[0_0_8px_#38bdf8]" />
-                    )}
-                    <div className="flex items-center gap-2.5">
-                      <Icon className={`w-3.5 h-3.5 transition-colors ${isActive ? 'text-sky-400' : 'text-zinc-550 group-hover:text-zinc-350'}`} />
-                      <span className="truncate max-w-[120px]">{p.name}</span>
-                    </div>
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80 animate-pulse shrink-0" />
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Footer User Info */}
-      <div className="px-4">
+      {/* Sidebar Footer User Info */}
+      <div className="border-t border-sidebar-border p-3">
         {user && (
-          <div className="p-3.5 rounded-xl border border-zinc-900/70 bg-zinc-950/30 backdrop-blur shadow-lg flex flex-col gap-3.5 hover:border-zinc-800 transition-colors">
-            <div className="flex items-center gap-3">
-              <div className="relative shrink-0">
-                <img
-                  src={user.avatar || 'https://api.dicebear.com/7.x/bottts/svg'}
-                  alt={user.name}
-                  className="w-8.5 h-8.5 rounded-lg bg-zinc-900 border border-zinc-800"
-                />
-                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-zinc-950 animate-pulse" />
+          <div className="flex items-center gap-2">
+            {!collapsed ? (
+              <>
+                <div className="flex flex-1 items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-sidebar-accent/50">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#10b981]/80 to-[#10b981] text-[11px] font-bold text-white uppercase">
+                    {user.name.slice(0, 2)}
+                  </div>
+                  <div className="flex flex-1 flex-col min-w-0">
+                    <span className="text-sm font-medium text-foreground truncate">{user.name}</span>
+                    <span className="text-[11px] text-muted-foreground truncate">{user.role}</span>
+                  </div>
+                </div>
+                <button
+                  onClick={signOut}
+                  aria-label="Log out"
+                  className="rounded-md p-1.5 text-muted-foreground/50 hover:bg-sidebar-accent hover:text-foreground transition-colors cursor-pointer shrink-0"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </>
+            ) : (
+              <div className="w-full flex justify-center">
+                <button
+                  onClick={signOut}
+                  title="Sign out"
+                  className="rounded-md p-1.5 text-muted-foreground/50 hover:bg-sidebar-accent hover:text-foreground transition-colors cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
               </div>
-              <div className="min-w-0">
-                <p className="text-xs font-extrabold text-zinc-200 truncate font-sans tracking-wide">{user.name}</p>
-                <p className="text-[9px] text-zinc-500 truncate font-mono mt-0.5 uppercase tracking-wider">{user.role}</p>
-              </div>
-            </div>
-            
-            <button
-              onClick={signOut}
-              className="w-full bg-zinc-900/50 hover:bg-zinc-900/90 text-zinc-400 hover:text-rose-450 border border-zinc-850 hover:border-zinc-800 py-2 rounded-lg text-[10px] font-extrabold font-mono transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm active:scale-[0.98]"
-            >
-              <LogOut className="w-3.5 h-3.5" /> SIGN OUT SESSION
-            </button>
+            )}
           </div>
         )}
       </div>
+
+      {/* Floating Circular Collapse Arrow Toggler Button */}
+      <button
+        onClick={() => setCollapsed(prev => !prev)}
+        aria-label="Collapse sidebar"
+        className="absolute -right-3 top-20 flex h-6 w-6 items-center justify-center rounded-full border border-sidebar-border bg-[#090a0f] text-muted-foreground hover:text-foreground shadow-md transition-all hover:bg-secondary focus-visible:outline-none cursor-pointer z-50"
+      >
+        {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
+      </button>
     </aside>
   );
 }
+
+

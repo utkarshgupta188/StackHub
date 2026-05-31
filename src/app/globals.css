@@ -1,26 +1,44 @@
 @import "tailwindcss";
 
 :root {
-  --background: #020204;
-  --foreground: #f4f4f5;
-  --card: #08080a;
-  --card-foreground: #fafafa;
-  --popover: #08080a;
-  --popover-foreground: #fafafa;
-  --primary: #ffffff;
-  --primary-foreground: #09090b;
-  --secondary: #121215;
-  --secondary-foreground: #fafafa;
-  --muted: #121215;
-  --muted-foreground: #a1a1aa;
-  --accent: #1c1c20;
-  --accent-foreground: #fafafa;
-  --destructive: #7f1d1d;
-  --destructive-foreground: #fca5a5;
-  --border: #141416;
-  --input: #141416;
-  --ring: #d4d4d8;
+  --background: #000000;
+  --foreground: #f8fafc;
+  
+  --card: #0c0d12;
+  --card-foreground: #f8fafc;
+  
+  --popover: #0a0a0f;
+  --popover-foreground: #f8fafc;
+  
+  --primary: #0082f6;
+  --primary-foreground: #ffffff;
+  
+  --secondary: #0c0d12;
+  --secondary-foreground: #f8fafc;
+  
+  --muted: #161822;
+  --muted-foreground: #94a3b8;
+  
+  --accent: rgba(0, 130, 246, 0.1);
+  --accent-foreground: #0082f6;
+  
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  
+  --border: rgba(255, 255, 255, 0.05);
+  --input: rgba(255, 255, 255, 0.03);
+  --ring: #0082f6;
   --radius: 0.85rem;
+
+  /* Custom Sidebar Colors matching Material Black */
+  --sidebar: #000000;
+  --sidebar-border: rgba(255, 255, 255, 0.05);
+  --sidebar-accent: rgba(255, 255, 255, 0.02);
+  --sidebar-primary: #0082f6;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-foreground: #94a3b8;
+  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-ibm-plex-mono), monospace;
 }
 
 @theme inline {
@@ -43,8 +61,26 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-border: var(--sidebar-border);
+  --radius-md: var(--radius);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-ibm-plex-mono);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+  text-rendering: optimizeLegibility !important;
 }
 
 body {
@@ -53,93 +89,146 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
   overflow-x: hidden;
   position: relative;
+  min-height: 100vh;
 }
 
-/* Stunning Mesh / Radial Background Glows */
-body::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 500px;
-  background: radial-gradient(circle 400px at 50% -100px, rgba(56, 189, 248, 0.05), transparent 80%),
-              radial-gradient(circle 600px at 80% 200px, rgba(99, 102, 241, 0.03), transparent 70%);
-  z-index: -1;
-  pointer-events: none;
-}
-
-/* Custom scrollbar styling */
+/* Custom Scrollbars */
 ::-webkit-scrollbar {
   width: 5px;
   height: 5px;
 }
+
 ::-webkit-scrollbar-track {
-  background: #020204;
-}
-::-webkit-scrollbar-thumb {
-  background: #1c1c20;
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #2a2a30;
+  background: #000000;
 }
 
-/* Glassmorphism utilities */
-.glass-panel {
-  background: rgba(8, 8, 11, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.03);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .glass-card {
-  background: rgba(12, 12, 16, 0.35);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.025);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  background: #0c0d12;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
+  transition: all 0.2s ease;
 }
 
 .glass-card:hover {
-  background: rgba(16, 16, 24, 0.55);
-  border-color: rgba(255, 255, 255, 0.06);
-  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.5);
-  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.08);
+  background: #111218;
 }
 
-/* Animations */
+.surface-shell {
+  background: #0c0d12;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.surface-chip {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  color: #10b981;
+}
+
+.subtle-grid {
+  background-image: 
+    linear-gradient(rgba(255, 255, 255, 0.01) 1px, transparent 1px), 
+    linear-gradient(90deg, rgba(255, 255, 255, 0.01) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Modern Text Gradients */
-.gradient-heading {
-  background: linear-gradient(135deg, #ffffff 0%, #a1a1aa 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-/* Glowing buttons */
-.glow-button {
-  position: relative;
+/* Force override widget internal styles to look stunning */
+.dashboard-widget {
+  background: #0c0d12 !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-radius: 0.85rem !important;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4) !important;
   transition: all 0.2s ease;
 }
-.glow-button:hover::after {
-  content: "";
-  position: absolute;
-  inset: -1px;
-  background: linear-gradient(45deg, #38bdf8, #6366f1);
-  z-index: -1;
-  border-radius: inherit;
-  filter: blur(6px);
-  opacity: 0.45;
-  transition: opacity 0.2s ease;
+
+.dashboard-widget:hover {
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dashboard-widget [class*='bg-zinc-950'],
+.dashboard-widget [class*='bg-zinc-900'],
+.dashboard-widget [class*='bg-[#030303]'],
+.dashboard-widget [class*='bg-[#06080d]'],
+.dashboard-widget [class*='bg-[#080b10]'] {
+  background-color: #0c0d13 !important;
+}
+
+.dashboard-widget [class*='border-zinc-900'],
+.dashboard-widget [class*='border-zinc-850'],
+.dashboard-widget [class*='border-white/5'] {
+  border-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+.dashboard-widget [class*='text-zinc-100'],
+.dashboard-widget [class*='text-zinc-200'],
+.dashboard-widget [class*='text-zinc-300'],
+.dashboard-widget [class*='text-foreground'] {
+  color: #f8fafc !important;
+}
+
+.dashboard-widget [class*='text-zinc-400'],
+.dashboard-widget [class*='text-zinc-500'],
+.dashboard-widget [class*='text-zinc-650'],
+.dashboard-widget [class*='text-muted-foreground'] {
+  color: #cbd5e1 !important; /* Bump up slate-gray contrast to a beautiful, bright silver */
+}
+
+.dashboard-widget [class*='text-zinc-500/70'],
+.dashboard-widget [class*='text-zinc-400/60'] {
+  color: #94a3b8 !important;
+}
+
+/* Force excellent font scaling and bold clarity in developer panels */
+.dashboard-widget p,
+.dashboard-widget span,
+.dashboard-widget div,
+.dashboard-widget li,
+.dashboard-widget input {
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  font-weight: 500 !important; /* Slightly heavier for extreme anti-aliased readability */
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+}
+
+.dashboard-widget h3 {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+}
+
+.dashboard-widget [class*='text-[10px]'],
+.dashboard-widget [class*='text-[11px]'],
+.dashboard-widget [class*='text-xs'] {
+  font-size: 12.5px !important; /* Bump tiny 10px and 11px details up to a readable 12.5px minimum */
+  font-weight: 500 !important;
+}
+
+.dashboard-widget [class*='text-[9px]'] {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+}
+
+.dashboard-widget [class*='bg-zinc-950/40'],
+.dashboard-widget [class*='bg-zinc-900/10'],
+.dashboard-widget [class*='bg-white/[0.03]'] {
+  background-color: rgba(255, 255, 255, 0.03) !important;
 }

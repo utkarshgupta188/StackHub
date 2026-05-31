@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { GitPullRequest, GitBranch, FolderGit, Star, GitFork, AlertCircle, FileCode, CheckCircle2, Eye, RefreshCw, ShieldAlert, X, HelpCircle } from 'lucide-react';
+import { GitPullRequest, GitBranch, FolderGit, Star, GitFork, AlertCircle, FileCode, CheckCircle2, Eye, RefreshCw, ShieldAlert, X, HelpCircle, CircleDotDashed, Rocket, UserRound, BadgeCheck, Clock3, Bell } from 'lucide-react';
 import { usePlugins } from '@/context/plugin-context';
 
 function GithubConfigAlert() {
@@ -348,19 +348,19 @@ export function GithubCommits() {
                 : 'bg-zinc-950/20 border-zinc-900/60 hover:bg-zinc-900/30'
             }`}
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] bg-zinc-800/90 border border-zinc-700/30 px-1.5 py-0.5 rounded font-mono text-zinc-400">
-                  {commit.sha}
-                </span>
-                <span className="text-[10px] text-zinc-500 font-mono">{commit.time}</span>
-              </div>
-              <span className="text-[10px] text-zinc-400 font-medium flex items-center gap-1">
-                <Eye className="w-3 h-3 text-zinc-500" /> Inspect Diff
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-[10px] bg-zinc-800/90 border border-zinc-700/30 px-1.5 py-0.5 rounded font-mono text-zinc-400 shrink-0">
+                {commit.sha}
+              </span>
+              <span className="text-[10px] text-zinc-400 font-semibold flex items-center gap-1 shrink-0">
+                <Eye className="w-3.5 h-3.5 text-zinc-500" /> Inspect
               </span>
             </div>
             <p className="text-xs text-zinc-300 font-sans mt-1.5 line-clamp-1">{commit.message}</p>
-            <p className="text-[10px] text-zinc-500 mt-1 font-mono">Author: {commit.author}</p>
+            <div className="flex items-center justify-between mt-1 text-[10px] text-zinc-500 font-mono">
+              <span>Author: {commit.author}</span>
+              <span>{commit.time}</span>
+            </div>
           </div>
         ))}
       </div>
@@ -405,6 +405,361 @@ export function GithubCommits() {
             </p>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+export function GithubIssues() {
+  const { refreshAllData } = usePlugins();
+  const [issues, setIssues] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [errorState, setErrorState] = useState(false);
+
+  useEffect(() => {
+    const fetchIssues = async () => {
+      try {
+        const res = await fetch('/api/github?type=issues');
+        if (res.ok) {
+          const body = await res.json();
+          setIssues(body.data || []);
+          setErrorState(false);
+        } else {
+          setErrorState(true);
+        }
+      } catch (e) {
+        setErrorState(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchIssues();
+  }, []);
+
+  const closeIssue = async (issueId: string, repo: string, owner: string) => {
+    try {
+      const res = await fetch('/api/github', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'close_issue', id: issueId, repo, owner }),
+      });
+      if (res.ok) {
+        await fetchIssues();
+        await refreshAllData();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fetchIssues = async () => {
+    try {
+      const res = await fetch('/api/github?type=issues');
+      if (res.ok) {
+        const body = await res.json();
+        setIssues(body.data || []);
+        setErrorState(false);
+      } else {
+        setErrorState(true);
+      }
+    } catch (e) {
+      setErrorState(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-6 text-zinc-500 gap-1.5 font-mono text-[10px] h-full">
+        <RefreshCw className="w-3.5 h-3.5 animate-spin" /> LOAD ISSUES...
+      </div>
+    );
+  }
+
+  if (errorState) {
+    return <GithubConfigAlert />;
+  }
+
+  return (
+    <div className="h-full flex flex-col justify-between">
+      <div className="space-y-2.5 overflow-y-auto max-h-[235px] pr-1">
+        {issues.length === 0 ? (
+          <div className="text-center py-8 text-zinc-500">
+            <CircleDotDashed className="w-8 h-8 text-amber-400 mx-auto mb-2" />
+            <p className="text-xs font-medium">No open issues found</p>
+          </div>
+        ) : (
+          issues.map(issue => (
+            <div key={`${issue.owner}-${issue.repo}-${issue.id}`} className="p-3 rounded-lg border border-zinc-900 bg-zinc-950/40 hover:bg-zinc-900/10 transition-colors text-xs">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <CircleDotDashed className="w-4 h-4 text-amber-400 shrink-0" />
+                    <p className="font-semibold text-zinc-200 line-clamp-1">{issue.title}</p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono text-zinc-500">
+                    <span className="text-zinc-400 font-semibold">{issue.owner}/{issue.repo}</span>
+                    <span>•</span>
+                    <span className="flex items-center gap-1"><UserRound className="w-3 h-3" />{issue.author}</span>
+                    <span>•</span>
+                    <span className="flex items-center gap-1"><Bell className="w-3 h-3" />{issue.comments} comments</span>
+                  </div>
+                  {issue.labels?.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {issue.labels.slice(0, 3).map((label: any) => (
+                        <span key={label.name} className="px-1.5 py-0.5 rounded border text-[9px] font-mono" style={{ borderColor: `#${label.color}40`, color: `#${label.color}` }}>
+                          {label.name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <button
+                  onClick={() => closeIssue(issue.id, issue.repo, issue.owner)}
+                  className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-2.5 py-1.5 rounded text-[10px] font-medium transition-colors cursor-pointer shrink-0"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function GithubBranches() {
+  const { refreshAllData } = usePlugins();
+  const [branches, setBranches] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [errorState, setErrorState] = useState(false);
+
+  useEffect(() => {
+    const fetchBranches = async () => {
+      try {
+        const res = await fetch('/api/github?type=branches');
+        if (res.ok) {
+          const body = await res.json();
+          setBranches(body.data || []);
+          setErrorState(false);
+        } else {
+          setErrorState(true);
+        }
+      } catch (e) {
+        setErrorState(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBranches();
+  }, []);
+
+  const deleteBranch = async (branch: string, repo: string, owner: string) => {
+    try {
+      const res = await fetch('/api/github', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete_branch', branch, repo, owner }),
+      });
+      if (res.ok) {
+        setBranches(prev => prev.filter(item => !(item.name === branch && item.repo === repo && item.owner === owner)));
+        await refreshAllData();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-6 text-zinc-500 gap-1.5 font-mono text-[10px] h-full">
+        <RefreshCw className="w-3.5 h-3.5 animate-spin" /> LOAD BRANCHES...
+      </div>
+    );
+  }
+
+  if (errorState) {
+    return <GithubConfigAlert />;
+  }
+
+  return (
+    <div className="h-full flex flex-col justify-between">
+      <div className="space-y-2 overflow-y-auto max-h-[230px] pr-1">
+        {branches.length === 0 ? (
+          <div className="text-center py-8 text-zinc-500">
+            <GitBranch className="w-8 h-8 text-sky-400 mx-auto mb-2" />
+            <p className="text-xs font-medium">No branches available</p>
+          </div>
+        ) : (
+          branches.map(branch => (
+            <div key={`${branch.owner}-${branch.repo}-${branch.name}`} className="p-2.5 rounded-lg border border-zinc-900 bg-zinc-950/40 hover:bg-zinc-900/10 transition-colors flex items-center justify-between text-xs">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <GitBranch className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+                  <p className="font-semibold text-zinc-300 truncate">{branch.name}</p>
+                  {branch.isDefault && <span className="px-1.5 py-0.5 rounded bg-emerald-950/30 text-emerald-400 border border-emerald-900/30 text-[9px] font-mono">DEFAULT</span>}
+                  {branch.protected && <span className="px-1.5 py-0.5 rounded bg-sky-950/30 text-sky-400 border border-sky-900/30 text-[9px] font-mono">PROTECTED</span>}
+                </div>
+                <p className="text-[10px] text-zinc-500 font-mono mt-1">{branch.owner}/{branch.repo} • {branch.sha}</p>
+              </div>
+              <button
+                onClick={() => deleteBranch(branch.name, branch.repo, branch.owner)}
+                disabled={branch.isDefault}
+                className="bg-zinc-800 hover:bg-zinc-700 disabled:bg-zinc-900 disabled:text-zinc-600 text-zinc-200 px-2 py-1 rounded text-[10px] font-medium transition-colors cursor-pointer disabled:cursor-not-allowed"
+              >
+                Delete
+              </button>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function GithubReleases() {
+  const [releases, setReleases] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [errorState, setErrorState] = useState(false);
+
+  useEffect(() => {
+    const fetchReleases = async () => {
+      try {
+        const res = await fetch('/api/github?type=releases');
+        if (res.ok) {
+          const body = await res.json();
+          setReleases(body.data || []);
+          setErrorState(false);
+        } else {
+          setErrorState(true);
+        }
+      } catch (e) {
+        setErrorState(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchReleases();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-6 text-zinc-500 gap-1.5 font-mono text-[10px] h-full">
+        <RefreshCw className="w-3.5 h-3.5 animate-spin" /> LOAD RELEASES...
+      </div>
+    );
+  }
+
+  if (errorState) {
+    return <GithubConfigAlert />;
+  }
+
+  return (
+    <div className="h-full flex flex-col justify-between">
+      <div className="space-y-2 overflow-y-auto max-h-[230px] pr-1">
+        {releases.length === 0 ? (
+          <div className="text-center py-8 text-zinc-500">
+            <Rocket className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
+            <p className="text-xs font-medium">No releases published yet</p>
+          </div>
+        ) : (
+          releases.map(release => (
+            <div key={release.id} className="p-3 rounded-lg border border-zinc-900 bg-zinc-950/40 hover:bg-zinc-900/10 transition-colors text-xs">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <Rocket className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <p className="font-semibold text-zinc-200 line-clamp-1">{release.name}</p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono text-zinc-500">
+                    <span className="text-zinc-400 font-semibold">{release.owner}/{release.repo}</span>
+                    <span>•</span>
+                    <span className="flex items-center gap-1"><GitBranch className="w-3 h-3" />{release.tagName}</span>
+                    <span>•</span>
+                    <span className="flex items-center gap-1"><Clock3 className="w-3 h-3" />{release.publishedAt ? new Date(release.publishedAt).toLocaleDateString() : 'Draft'}</span>
+                  </div>
+                </div>
+                <div className="text-right text-[10px] font-mono text-zinc-500 shrink-0">
+                  <p>{release.downloads} downloads</p>
+                  <p>{release.prerelease ? 'Prerelease' : release.draft ? 'Draft' : 'Stable'}</p>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function GithubUserOverview() {
+  const [overview, setOverview] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [errorState, setErrorState] = useState(false);
+
+  useEffect(() => {
+    const fetchOverview = async () => {
+      try {
+        const res = await fetch('/api/github?type=user');
+        if (res.ok) {
+          const body = await res.json();
+          setOverview(body.data || null);
+          setErrorState(false);
+        } else {
+          setErrorState(true);
+        }
+      } catch (e) {
+        setErrorState(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchOverview();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-6 text-zinc-500 gap-1.5 font-mono text-[10px] h-full">
+        <RefreshCw className="w-3.5 h-3.5 animate-spin" /> LOAD PROFILE...
+      </div>
+    );
+  }
+
+  if (errorState || !overview) {
+    return <GithubConfigAlert />;
+  }
+
+  const stats = [
+    { label: 'Repos', value: overview.totalRepos },
+    { label: 'Followers', value: overview.followers },
+    { label: 'Following', value: overview.following },
+    { label: 'Plan', value: overview.plan },
+  ];
+
+  return (
+    <div className="h-full flex flex-col justify-between">
+      <div className="flex items-start gap-3 border border-zinc-900 rounded-xl p-3 bg-zinc-950/40">
+        <img src={overview.avatar} alt={overview.login} className="w-14 h-14 rounded-xl border border-zinc-800 object-cover shrink-0" />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-semibold text-zinc-100 truncate">{overview.name || overview.login}</p>
+            <BadgeCheck className="w-4 h-4 text-sky-400 shrink-0" />
+          </div>
+          <p className="text-[10px] text-zinc-500 font-mono">@{overview.login}</p>
+          <p className="text-xs text-zinc-400 mt-2 line-clamp-2 leading-relaxed">{overview.bio || 'No bio provided.'}</p>
+          <p className="text-[10px] text-zinc-500 font-mono mt-2">{overview.company || 'Independent'} • {overview.location || 'Unknown location'}</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 mt-3">
+        {stats.map(stat => (
+          <div key={stat.label} className="rounded-lg border border-zinc-900 bg-zinc-950/40 p-2.5">
+            <p className="text-[10px] uppercase tracking-wide text-zinc-500 font-mono">{stat.label}</p>
+            <p className="text-sm font-semibold text-zinc-200 mt-1 truncate">{stat.value}</p>
+          </div>
+        ))}
       </div>
     </div>
   );

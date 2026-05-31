@@ -4,6 +4,7 @@ import { S3Client, ListBucketsCommand, GetBucketLocationCommand } from '@aws-sdk
 import { LambdaClient, ListFunctionsCommand, InvokeCommand } from '@aws-sdk/client-lambda';
 import { CloudWatchClient, GetMetricStatisticsCommand } from '@aws-sdk/client-cloudwatch';
 import { IAMClient, ListUsersCommand, GetAccountSummaryCommand } from '@aws-sdk/client-iam';
+import { CostExplorerClient, GetCostAndUsageCommand } from '@aws-sdk/client-cost-explorer';
 import { readDb, writeDb } from '@/lib/db';
 
 const AWS_REGIONS = [
@@ -18,6 +19,19 @@ function race<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
     promise,
     new Promise<T>(r => setTimeout(() => r(fallback), ms)),
   ]);
+}
+
+function monthLabel(isoDate: string) {
+  return new Date(`${isoDate}T00:00:00Z`).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+}
+
+function mapCostService(service: string) {
+  const normalized = service.toLowerCase();
+  if (normalized.includes('elastic compute cloud') || normalized.includes('ec2')) return 'EC2';
+  if (normalized.includes('simple storage service') || normalized === 's3') return 'S3';
+  if (normalized.includes('relational database service') || normalized.includes('rds')) return 'RDS';
+  if (normalized.includes('lambda')) return 'Lambda';
+  return 'Other';
 }
 
 export async function GET(req: Request) {
@@ -103,6 +117,55 @@ export async function GET(req: Request) {
         5000, []
       );
       return NextResponse.json({ buckets });
+    }
+
+    // ── COST EXPLORER ─────────────────────────────────────────────
+    if (type === 'costs') {
+      const client = new CostExplorerClient({ region: 'us-east-1', credentials });
+      const end = new Date();
+      const start = new Date(end.getFullYear(), end.getMonth() - 5, 1);
+      const startDate = start.toISOString().slice(0, 10);
+      const endDate = end.toISOString().slice(0, 10);
+
+      const result = await race(
+        client.send(new GetCostAndUsageCommand({
+          TimePeriod: { Start: startDate, End: endDate },
+          Granularity: 'MONTHLY',
+          Metrics: ['UnblendedCost'],
+          GroupBy: [{ Type: 'DIMENSION', Key: 'SERVICE' }],
+        })),
+        6000,
+        { ResultsByTime: [] } as any
+      );
+
+      const costs = (result.ResultsByTime || []).map((period: any) => {
+        const row: Record<string, any> = {
+          month: monthLabel(period.TimePeriod?.Start || startDate),
+          EC2: 0,
+          S3: 0,
+          RDS: 0,
+          Lambda: 0,
+          Other: 0,
+          Total: 0,
+        };
+
+        period.Groups?.forEach((group: any) => {
+          const service = mapCostService(group.Keys?.[0] || 'Other');
+          const value = parseFloat(group.Metrics?.UnblendedCost?.Amount || '0');
+          row[service] = (row[service] || 0) + value;
+          row.Total += value;
+        });
+
+        Object.keys(row).forEach(key => {
+          if (typeof row[key] === 'number') {
+            row[key] = Number(row[key].toFixed(2));
+          }
+        });
+
+        return row;
+      });
+
+      return NextResponse.json({ costs, currency: result.ResultsByTime?.[0]?.Total?.UnblendedCost?.Unit || 'USD' });
     }
 
     // ── LAMBDA FUNCTIONS ───────────────────────────────────────────

@@ -71,6 +71,10 @@ export const githubPlugin: Plugin = {
     },
   },
   widgets: [
+    { id: 'github-issues', title: 'GitHub Issues', size: 'md', component: 'GithubIssues' },
+    { id: 'github-branches', title: 'Repository Branches', size: 'md', component: 'GithubBranches' },
+    { id: 'github-releases', title: 'Latest Releases', size: 'md', component: 'GithubReleases' },
+    { id: 'github-user-overview', title: 'User Overview', size: 'lg', component: 'GithubUserOverview' },
     { id: 'github-pull-requests', title: 'GitHub Pull Requests', size: 'md', component: 'GithubPullRequests' },
     { id: 'github-repositories', title: 'GitHub Repositories', size: 'sm', component: 'GithubRepositories' },
     { id: 'github-commits', title: 'Recent Commits & Code Diffs', size: 'lg', component: 'GithubCommits' },

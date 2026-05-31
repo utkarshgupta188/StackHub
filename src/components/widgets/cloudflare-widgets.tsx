@@ -353,80 +353,372 @@ export function CloudflareDns() {
   );
 }
 
-export function CloudflareSecurity() {
-  const [events, setEvents] = useState<any[]>([]);
+export function CloudflareSettings() {
+  const [zones, setZones] = useState<any[]>([]);
+  const [selectedZoneId, setSelectedZoneId] = useState<string>('');
+  const [settings, setSettings] = useState<Record<string, any>>({});
   const [errorState, setErrorState] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(true);
+  const [loadingSettings, setLoadingSettings] = useState(false);
+  const [updating, setUpdating] = useState<string | null>(null);
+
+  const fetchZoneSettings = async (zoneId: string) => {
+    setLoadingSettings(true);
+    try {
+      const res = await fetch(`/api/cloudflare?type=settings&zoneId=${zoneId}`);
+      if (res.ok) {
+        const body = await res.json();
+        setSettings(body.settings || {});
+        setErrorState(false);
+      } else {
+        const body = await res.json();
+        setErrorMessage(body.error || 'Failed to fetch settings');
+        setErrorState(true);
+      }
+    } catch (e: any) {
+      setErrorMessage(e.message || 'Failed to fetch settings');
+      setErrorState(true);
+    } finally {
+      setLoadingSettings(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchSecurity = async () => {
+    const initSettings = async () => {
+      setLoading(true);
       try {
-        const res = await fetch('/api/cloudflare?type=security');
-        if (res.ok) {
-          const body = await res.json();
-          setEvents(body.events || []);
-          setErrorState(false);
+        const zonesRes = await fetch('/api/cloudflare?type=zones');
+        if (!zonesRes.ok) {
+          const body = await zonesRes.json();
+          setErrorMessage(body.error || 'Failed to fetch zones.');
+          setErrorState(true);
+          setLoading(false);
+          return;
+        }
+        const zonesData = await zonesRes.json();
+        const fetchedZones = zonesData.zones || [];
+        setZones(fetchedZones);
+
+        if (fetchedZones.length > 0) {
+          const defaultZoneId = fetchedZones[0].id;
+          setSelectedZoneId(defaultZoneId);
+          await fetchZoneSettings(defaultZoneId);
         } else {
+          setErrorMessage('No domains found in your Cloudflare account.');
           setErrorState(true);
         }
-      } catch (e) {
+      } catch (e: any) {
+        setErrorMessage(e.message || 'Failed to load zones.');
         setErrorState(true);
       } finally {
         setLoading(false);
       }
     };
-    fetchSecurity();
+    initSettings();
   }, []);
+
+  const handleZoneChange = async (zoneId: string) => {
+    setSelectedZoneId(zoneId);
+    await fetchZoneSettings(zoneId);
+  };
+
+  const updateSetting = async (settingId: string, value: any) => {
+    setUpdating(settingId);
+    try {
+      const res = await fetch('/api/cloudflare', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'updateSetting', settingId, value, zoneId: selectedZoneId }),
+      });
+      if (res.ok) {
+        await fetchZoneSettings(selectedZoneId);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setUpdating(null);
+    }
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8 text-zinc-500 font-mono text-[10px] h-full">
-        <RefreshCw className="w-3.5 h-3.5 animate-spin mr-2 text-zinc-400" /> LOADING THREAT LOGS...
+        <RefreshCw className="w-3.5 h-3.5 animate-spin mr-2 text-zinc-400" /> SCANNING DOMAINS...
       </div>
     );
   }
 
   if (errorState) {
-    return <CloudflareConfigAlert />;
+    return <CloudflareConfigAlert message={errorMessage} />;
+  }
+
+  const devMode = settings.development_mode === 'on';
+
+  return (
+    <div className="h-full flex flex-col justify-between">
+      <div className="space-y-3.5">
+        <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
+          <div className="flex items-center gap-1.5">
+            <Shield className="w-3.5 h-3.5 text-orange-500" />
+            <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider font-mono">Zone Settings Panel</span>
+          </div>
+          <select
+            value={selectedZoneId}
+            onChange={(e) => handleZoneChange(e.target.value)}
+            className="bg-zinc-950 border border-zinc-850/80 text-zinc-250 text-[10px] font-bold font-mono px-2 py-0.5 rounded outline-none cursor-pointer hover:border-zinc-700 transition-colors"
+          >
+            {zones.map((z) => (
+              <option key={z.id} value={z.id} className="bg-zinc-950 text-zinc-250">
+                {z.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        
+        {loadingSettings ? (
+          <div className="flex flex-col items-center justify-center py-10 text-zinc-500 font-mono text-[10px] gap-2">
+            <RefreshCw className="w-4 h-4 animate-spin text-zinc-400" /> 
+            <span>RETRIEVING SETTINGS...</span>
+          </div>
+        ) : (
+          <div className="space-y-3 text-xs font-mono">
+            {/* SSL/TLS Setting */}
+            <div className="flex items-center justify-between p-2 rounded border border-zinc-900 bg-zinc-950/20 hover:border-zinc-800/80 transition-colors">
+              <div>
+                <span className="text-[10px] text-zinc-400 font-bold block">SSL/TLS ENCRYPTION</span>
+                <span className="text-[9px] text-zinc-600 font-sans">Edge to origin security mode</span>
+              </div>
+              <select
+                disabled={updating === 'ssl'}
+                value={settings.ssl || 'off'}
+                onChange={(e) => updateSetting('ssl', e.target.value)}
+                className="bg-zinc-950 border border-zinc-850 text-zinc-300 text-[10px] font-bold px-2 py-1 rounded outline-none cursor-pointer hover:border-zinc-700 transition-colors"
+              >
+                <option value="off">Off (Insecure)</option>
+                <option value="flexible">Flexible</option>
+                <option value="full">Full (Strict)</option>
+                <option value="strict">Full (Strict - Origin check)</option>
+              </select>
+            </div>
+
+            {/* Development Mode Toggle */}
+            <div className="flex items-center justify-between p-2 rounded border border-zinc-900 bg-zinc-950/20 hover:border-zinc-800/80 transition-colors">
+              <div>
+                <span className="text-[10px] text-zinc-400 font-bold block">DEVELOPMENT MODE</span>
+                <span className="text-[9px] text-zinc-600 font-sans">Bypass edge cache for active staging</span>
+              </div>
+              <button
+                disabled={updating === 'development_mode'}
+                onClick={() => updateSetting('development_mode', devMode ? 'off' : 'on')}
+                className={`px-3 py-1 rounded border text-[9px] font-bold cursor-pointer transition-all ${
+                  updating === 'development_mode'
+                    ? 'bg-zinc-900 border-zinc-900 text-zinc-600'
+                    : devMode
+                    ? 'bg-orange-950/25 border-orange-900/40 text-orange-400 hover:bg-orange-900/20'
+                    : 'bg-zinc-900/70 border-zinc-800/80 text-zinc-500 hover:bg-zinc-800/65'
+                }`}
+              >
+                {updating === 'development_mode' ? 'SAVING...' : devMode ? 'ACTIVE (BYPASS)' : 'OFF (CACHED)'}
+              </button>
+            </div>
+
+            {/* Security Level Setting */}
+            <div className="flex items-center justify-between p-2 rounded border border-zinc-900 bg-zinc-950/20 hover:border-zinc-800/80 transition-colors">
+              <div>
+                <span className="text-[10px] text-zinc-400 font-bold block">SECURITY THREAT LEVEL</span>
+                <span className="text-[9px] text-zinc-600 font-sans">Challenge/Block rules behavior</span>
+              </div>
+              <select
+                disabled={updating === 'security_level'}
+                value={settings.security_level || 'medium'}
+                onChange={(e) => updateSetting('security_level', e.target.value)}
+                className="bg-zinc-950 border border-zinc-850 text-zinc-300 text-[10px] font-bold px-2 py-1 rounded outline-none cursor-pointer hover:border-zinc-700 transition-colors"
+              >
+              <option value="essentially_off">Essentially Off</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="under_attack">I'm Under Attack!</option>
+            </select>
+          </div>
+        </div>
+      )}
+    </div>
+  </div>
+);
+}
+
+export function CloudflareWorkers() {
+  const [workers, setWorkers] = useState<any[]>([]);
+  const [scopeRequired, setScopeRequired] = useState(false);
+  const [errorState, setErrorState] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [pingingId, setPingingId] = useState<string | null>(null);
+  const [pingResult, setPingResult] = useState<Record<string, { status: string; latency: number }>>({});
+
+  useEffect(() => {
+    const fetchWorkers = async () => {
+      try {
+        const res = await fetch('/api/cloudflare?type=workers');
+        if (res.ok) {
+          const body = await res.json();
+          if (body.scopeRequired) {
+            setScopeRequired(true);
+          } else {
+            setWorkers(body.workers || []);
+          }
+          setErrorState(false);
+        } else {
+          const body = await res.json();
+          setErrorMessage(body.error || 'Failed to fetch Workers.');
+          setErrorState(true);
+        }
+      } catch (e: any) {
+        setErrorMessage(e.message || 'Failed to fetch Workers.');
+        setErrorState(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchWorkers();
+  }, []);
+
+  const testPing = async (id: string, subdomain: string) => {
+    setPingingId(id);
+    try {
+      const res = await fetch(`/api/cloudflare?type=ping&url=https://${subdomain}`);
+      if (res.ok) {
+        const data = await res.json();
+        setPingResult(prev => ({
+          ...prev,
+          [id]: { 
+            status: data.online ? 'ONLINE' : 'OFFLINE', 
+            statusCode: data.status,
+            latency: data.latency 
+          }
+        }));
+      } else {
+        setPingResult(prev => ({
+          ...prev,
+          [id]: { status: 'OFFLINE', latency: 0 }
+        }));
+      }
+    } catch (e) {
+      setPingResult(prev => ({
+        ...prev,
+        [id]: { status: 'OFFLINE', latency: 0 }
+      }));
+    } finally {
+      setPingingId(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12 text-zinc-500 font-mono text-[10px] h-full">
+        <RefreshCw className="w-4 h-4 animate-spin mr-2 text-zinc-400" /> RETRIEVING LIVE WORKERS...
+      </div>
+    );
+  }
+
+  if (scopeRequired) {
+    return (
+      <div className="flex flex-col items-center justify-center py-6 px-4 text-center h-full relative font-sans">
+        <Server className="w-8 h-8 text-orange-500/50 mb-2.5" />
+        <p className="text-xs font-semibold text-zinc-300">Workers Scope Required</p>
+        <p className="text-[10px] text-zinc-550 max-w-[250px] mt-1 leading-relaxed">
+          Your current Cloudflare token only has DNS permissions configured. To monitor serverless workers here, add the <span className="font-mono text-orange-400 bg-orange-950/20 px-1 py-0.5 rounded text-[9px]">Workers Scripts: Read</span> scope to your API token.
+        </p>
+        <p className="text-[9px] text-zinc-600 mt-2 italic">
+          (DNS dashboard widgets are active and working!)
+        </p>
+      </div>
+    );
+  }
+
+  if (errorState) {
+    return (
+      <div className="flex flex-col items-center justify-center py-6 px-4 text-center h-full relative">
+        <ShieldAlert className="w-8 h-8 text-orange-500 mb-2.5 animate-pulse" />
+        <p className="text-xs font-semibold text-zinc-300">Workers Integration Error</p>
+        <p className="text-[10px] text-zinc-500 max-w-[240px] mt-1 font-sans leading-relaxed">
+          {errorMessage.includes('scope') 
+            ? 'Ensure your Cloudflare API Token has the "Workers Scripts: Read" scope enabled in the Cloudflare dashboard.' 
+            : errorMessage}
+        </p>
+      </div>
+    );
   }
 
   return (
     <div className="h-full flex flex-col justify-between">
-      <div className="space-y-2">
-        <div className="flex items-center justify-between border-b border-zinc-900 pb-2 mb-2.5">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between border-b border-zinc-900 pb-2 mb-2">
           <div className="flex items-center gap-1.5">
-            <Shield className="w-3.5 h-3.5 text-rose-500 animate-pulse" />
-            <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider font-mono">WAF Threat Feed</span>
+            <Server className="w-3.5 h-3.5 text-orange-500" />
+            <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider font-mono">Edge Compute Workers</span>
           </div>
-          <span className="inline-flex w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span className="text-[9px] font-mono text-zinc-650">{workers.length} active</span>
         </div>
-        
+
         <div className="space-y-2 max-h-[220px] overflow-y-auto pr-0.5 scrollbar-thin">
-          {events.map((e, idx) => (
-            <div key={idx} className="p-2.5 rounded border border-zinc-900 bg-zinc-950/20 hover:bg-zinc-950/40 hover:border-zinc-800 transition-all flex items-center justify-between text-xs font-mono">
-              <div className="flex items-center gap-2.5">
-                {e.action === 'block' ? (
-                  <ShieldAlert className="w-3.5 h-3.5 text-rose-500 shrink-0" />
-                ) : (
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                )}
-                <div>
-                  <p className="font-semibold text-zinc-200 text-[11px] truncate max-w-[125px]">{e.ip}</p>
-                  <p className="text-[9px] text-zinc-500 mt-0.5 font-sans font-medium">{e.rule} &bull; {e.country}</p>
-                </div>
-              </div>
-              <div className="text-right text-[10px]">
-                <span className={`px-1.5 py-0.5 rounded text-[8px] font-extrabold tracking-wider border ${
-                  e.action === 'block'
-                    ? 'bg-rose-950/20 border-rose-900/35 text-rose-450'
-                    : 'bg-emerald-950/20 border-emerald-900/35 text-emerald-400'
-                }`}>
-                  {e.action.toUpperCase()}
-                </span>
-                <p className="text-[9px] text-zinc-600 mt-1 font-sans">{e.datetime}</p>
-              </div>
+          {workers.length === 0 ? (
+            <div className="py-10 text-center text-zinc-600 text-[10px] font-sans">
+              No workers found on this Cloudflare account.
             </div>
-          ))}
+          ) : (
+            workers.map(w => {
+              const ping = pingResult[w.id];
+              return (
+                <div key={w.id} className="p-2.5 rounded border border-zinc-900 bg-zinc-950/20 hover:bg-zinc-950/40 hover:border-zinc-800 transition-all flex items-center justify-between text-xs font-mono">
+                  <div className="min-w-0 pr-2">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+                      <p className="font-semibold text-zinc-200 text-[11px] truncate max-w-[150px]">{w.name}</p>
+                    </div>
+                    <p className="text-[9px] text-zinc-500 mt-1 font-mono truncate max-w-[200px]" title={`https://${w.subdomain}`}>
+                      {w.subdomain}
+                    </p>
+                  </div>
+                  
+                  <div className="flex items-center gap-3 shrink-0">
+                    {ping ? (
+                      <div className="text-right">
+                        <span className={`text-[9px] font-bold block ${
+                          ping.status === 'ONLINE' ? 'text-emerald-400' : 'text-rose-500'
+                        }`}>
+                          {ping.status}
+                        </span>
+                        <span className="text-[8px] text-zinc-650 font-mono font-semibold">
+                          {ping.status === 'ONLINE' ? `${ping.latency}ms` : 'OFFLINE'}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-[9px] text-zinc-600 font-medium">Modified: {w.modified_on}</span>
+                    )}
+
+                    <button
+                      disabled={pingingId === w.id}
+                      onClick={() => testPing(w.id, w.subdomain)}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded border text-[9px] font-bold cursor-pointer transition-all ${
+                        pingingId === w.id
+                          ? 'bg-zinc-900 border-zinc-900 text-zinc-600'
+                          : 'bg-zinc-950/80 border-zinc-850 hover:bg-zinc-900 hover:text-zinc-200 text-zinc-400'
+                      }`}
+                    >
+                      {pingingId === w.id ? (
+                        <RefreshCw className="w-2.5 h-2.5 animate-spin text-zinc-500" />
+                      ) : (
+                        'PING'
+                      )}
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
     </div>

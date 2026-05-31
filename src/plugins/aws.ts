@@ -71,6 +71,9 @@ export const awsPlugin: Plugin = {
     },
   },
   widgets: [
+    { id: 'aws-lambda', title: 'Lambda Functions', size: 'lg', component: 'AwsLambda' },
+    { id: 'aws-iam', title: 'IAM Overview', size: 'md', component: 'AwsIam' },
+    { id: 'aws-vpc', title: 'VPC Topology', size: 'md', component: 'AwsVpc' },
     { id: 'aws-costs', title: 'AWS Cloud Cost Overview', size: 'md', component: 'AwsCosts' },
     { id: 'aws-ec2', title: 'EC2 Compute Instances', size: 'lg', component: 'AwsInstances' },
     { id: 'aws-s3', title: 'S3 Storage Buckets', size: 'sm', component: 'AwsBuckets' },

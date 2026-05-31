@@ -9,7 +9,7 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { action, pluginId, key, value } = body;
+    const { action, pluginId, key, value, pluginManifest } = body;
 
     const db = readDb();
 
@@ -41,6 +41,35 @@ export async function POST(req: Request) {
           },
         };
       });
+    } else if (action === 'installPlugin') {
+      if (pluginManifest && pluginManifest.id && pluginManifest.name) {
+        const newPlugin = {
+          id: pluginManifest.id,
+          name: pluginManifest.name,
+          description: pluginManifest.description || 'Custom third-party SDK extension.',
+          icon: pluginManifest.icon || 'puzzle',
+          enabled: false,
+          settings: pluginManifest.settings || {},
+          widgets: pluginManifest.widgets || [],
+          commands: pluginManifest.commands || [],
+        };
+
+        const index = db.plugins.findIndex(p => p.id === newPlugin.id);
+        if (index >= 0) {
+          db.plugins[index] = newPlugin;
+        } else {
+          db.plugins.push(newPlugin);
+        }
+
+        db.feed.unshift({
+          id: `f-${Date.now()}`,
+          pluginId: newPlugin.id,
+          title: `SDK Plugin registered`,
+          description: `Custom extension '${newPlugin.name}' registered. Configure it inside settings.`,
+          timestamp: 'Just now',
+          type: 'success',
+        });
+      }
     }
 
     writeDb(db);

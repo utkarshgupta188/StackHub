@@ -22,7 +22,8 @@ export const cloudflarePlugin: Plugin = {
   },
   widgets: [
     { id: 'cloudflare-dns', title: 'Cloudflare DNS Records', size: 'md', component: 'CloudflareDns' },
-    { id: 'cloudflare-security', title: 'Security Blocks Feed', size: 'sm', component: 'CloudflareSecurity' },
+    { id: 'cloudflare-workers', title: 'Cloudflare Workers', size: 'md', component: 'CloudflareWorkers' },
+    { id: 'cloudflare-settings', title: 'Cloudflare Settings Control', size: 'md', component: 'CloudflareSettings' },
   ],
   commands: [
     {
